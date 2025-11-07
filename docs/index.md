@@ -4,5 +4,25 @@
 
 # LSL.HttpMessageHandlers.Capturing.Core
 
-Provide package documentation here.
+Provides a message handler as the basis for capturing requests and responses.
+
+## Dependency Injection Quick Start
+
+The following example uses the provided `DelegatingAsyncRequestAndResponseCapturer` (it assumes an `IServiceCollection` for services)
+
+```csharp
+services
+    .AddHttpClient<MyTestClient>()
+    .AddRequestAndResponseCapturing(c => c
+        .AddCapturingHandlerFactory(_ => new DelegatingAsyncRequestAndResponseCapturer(c =>
+        {
+            capturesUrls.Add(c.Request.RequestUri.ToString());
+            return Task.CompletedTask;
+        }))
+    );
+```
+
+## .NET 451 Quick Start
+
+example here
 
