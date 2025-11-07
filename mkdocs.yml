@@ -1,0 +1,23 @@
+site_name: LSL.HttpMessageHandlers.Capturing.Core
+site_url: https://alunacjones.github.io/LSL.HttpMessageHandlers.Capturing.Core/
+repo_url: https://github.com/alunacjones/LSL.HttpMessageHandlers.Capturing.Core
+extra_css:
+  - css/tryIt.css
+extra_javascript:
+  - javascript/tryIt.js
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - tables
+  - attr_list
+theme: 
+  name: material
+  features:
+    - content.code.copy  
+    - navigation.expand
