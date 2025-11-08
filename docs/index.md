@@ -8,21 +8,43 @@ Provides a message handler as the basis for capturing requests and responses.
 
 ## Dependency Injection Quick Start
 
-The following example uses the provided `DelegatingAsyncRequestAndResponseCapturer` (it assumes an `IServiceCollection` for services)
+The following example uses the provided `DelegatingAsyncRequestAndResponseCapturer` (it assumes an `IServiceCollection` for services):
 
 ```csharp
+var capturedUrls = new List<string>();
+
 services
     .AddHttpClient<MyTestClient>()
     .AddRequestAndResponseCapturing(c => c
-        .AddCapturingHandlerFactory(_ => new DelegatingAsyncRequestAndResponseCapturer(c =>
-        {
-            capturesUrls.Add(c.Request.RequestUri.ToString());
-            return Task.CompletedTask;
-        }))
+        .AddCapturingHandlerFactory(serviceProvider => 
+            new DelegatingAsyncRequestAndResponseCapturer(c =>
+            {
+                capturesUrls.Add(c.Request.RequestUri.ToString());
+                return Task.CompletedTask;
+            }))
     );
+
+// when the client is used then all request URIs will be captured in capturedUrls
 ```
 
 ## .NET 451 Quick Start
 
-example here
+The following example uses the provided `DelegatingAsyncRequestAndResponseCapturer`:
+
+```csharp
+var capturedUrls = new List<string>();
+
+var options = new LegacyCapturingMessageHandlerOptions()
+    .AddCapturingHandlerFactory(() => 
+        new DelegatingAsyncRequestAndResponseCapturer(c =>
+        {
+            capturesUrls.Add(c.Request.RequestUri.ToString());
+            return Task.CompletedTask;
+        }));
+
+using var httpClient = new HttpClient(new LegacyCapturingMessageHandler(options) { InnerHandler = mockHttpMessageHandler });
+
+var client = new MyTestClient(httpClient);
+// when the client is used then all request URIs will be captured in capturedUrls
+```
 
