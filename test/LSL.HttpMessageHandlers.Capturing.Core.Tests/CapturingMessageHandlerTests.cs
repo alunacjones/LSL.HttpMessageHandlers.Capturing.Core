@@ -33,7 +33,7 @@ public class CapturingMessageHandlerTests
                 }))
             )
             .Services
-            .ConfigureAll<CapturingMessageHandlerOptions>(c => c
+            .ConfigureAllRequestAndResponseCapturing(c => c
                 .AddCapturingHandlerFactory(_ =>
                     new DelegatingAsyncRequestAndResponseCapturer(c =>
                     {

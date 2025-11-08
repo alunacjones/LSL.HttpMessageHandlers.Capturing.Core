@@ -14,6 +14,10 @@ The `Response` property will have an `HttpResponseMessage` if the HTTP call did 
 
 The `Exception` property will have the exception that was thrown if the HTTP call failed.
 
+# SendExceptionThrown
+
+The `SendExceptionThrown` property will be `true` is the `Exception` property is not null.
+
 # StopProcessing method
 
 This method can be used to stop processing any more `IAsyncRequestResponseCapturer` instances that have been configured.

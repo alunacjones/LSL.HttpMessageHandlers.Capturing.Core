@@ -32,4 +32,13 @@ public static class MessageHandlersCoreServiceCollectionExtensions
             sp => sp.GetRequiredService<CapturingMessageHandler>().With(a => a.Name = source.Name)
         );
     }
+
+    /// <summary>
+    /// Configure all named options for request and response capturing
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="configurator"></param>
+    /// <returns></returns>
+    public static IServiceCollection ConfigureAllRequestAndResponseCapturing(this IServiceCollection source, Action<CapturingMessageHandlerOptions> configurator) =>
+        source.ConfigureAll(configurator);
 }
