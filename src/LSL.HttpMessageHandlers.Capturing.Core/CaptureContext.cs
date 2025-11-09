@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+
 namespace LSL.HttpMessageHandlers.Capturing.Core;
 
 /// <summary>
@@ -16,11 +17,4 @@ public sealed record CaptureContext(HttpRequestMessage Request, HttpResponseMess
     /// Stops further capturing handlers from running
     /// </summary>
     public void StopProcessing(bool shouldStopProcessing = true) => ShouldStop = shouldStopProcessing;
-
-    /// <summary>
-    /// Is true when an exception was captured on sending. The exception will still propagate
-    /// but a capturing handler could do something with the exception prior to re-throw
-    /// </summary>
-    public bool SendExceptionThrown => SendException is not null;
 };
-

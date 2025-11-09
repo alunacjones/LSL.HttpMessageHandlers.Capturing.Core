@@ -20,29 +20,28 @@ public class CapturingMessageHandlerTests
     [TestCase(true, true)]
     public async Task GivenAHandler_ItShouldProduceTheExpectedResult(bool sendThrowsException, bool enabled)
     {
-        var capturesUrls = new List<string>();
+        var capturedUrls = new List<string>();
         var exceptionThrown = false;
         var provider = new ServiceCollection()
-            .AddMockHttpMessageHandler()
-            .AddHttpClient<MyTestClient>()
-            .AddRequestAndResponseCapturing(c => c
+            .ConfigureAllRequestAndResponseCapturing(c => c
                 .AddCapturingHandlerFactory(_ => new DelegatingAsyncRequestAndResponseCapturer(c =>
                 {
-                    capturesUrls.Add(c.Request.RequestUri.ToString());
+                    capturedUrls.Add(c.Request.RequestUri.ToString());
                     return Task.CompletedTask;
                 }))
-            )
-            .Services
-            .ConfigureAllRequestAndResponseCapturing(c => c
                 .AddCapturingHandlerFactory(_ =>
                     new DelegatingAsyncRequestAndResponseCapturer(c =>
                     {
                         c.StopProcessing(!enabled);
-                        exceptionThrown = c.SendExceptionThrown;
+                        c.WithExceptionAndRequest((_, _) => exceptionThrown = true);
                         return Task.CompletedTask;
                     }),
                     0)
-            )
+            )        
+            .AddMockHttpMessageHandler()
+            .AddHttpClient<MyTestClient>()            
+            .AddRequestAndResponseCapturing()
+            .Services
             .BuildServiceProvider();
 
         var client = provider.GetRequiredService<MyTestClient>();
@@ -62,7 +61,7 @@ public class CapturingMessageHandlerTests
         catch { }
 
         // Assert
-        capturesUrls.Should().HaveCount(enabled ? 1 : 0);
+        capturedUrls.Should().HaveCount(enabled ? 1 : 0);
         exceptionThrown.Should().Be(sendThrowsException);
     }
     

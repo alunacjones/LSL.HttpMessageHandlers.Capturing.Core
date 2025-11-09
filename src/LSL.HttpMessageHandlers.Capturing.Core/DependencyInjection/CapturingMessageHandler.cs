@@ -1,12 +1,8 @@
 using System;
 using System.Collections.Generic;
-using LSL.HttpMessageHandlers.Capturing.Core;
-using LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-#pragma warning disable IDE0130 // Namespace does not match folder structure
-namespace Microsoft.Extensions.DependencyInjection;
-#pragma warning restore IDE0130 // Namespace does not match folder structure
+namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
 
 internal class CapturingMessageHandler(
     IOptionsSnapshot<CapturingMessageHandlerOptions> optionsSnapshot,

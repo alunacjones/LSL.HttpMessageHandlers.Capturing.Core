@@ -18,12 +18,12 @@ public static class MessageHandlersCoreServiceCollectionExtensions
     /// <param name="source"></param>
     /// <param name="configurator"></param>
     /// <returns></returns>
-    public static IHttpClientBuilder AddRequestAndResponseCapturing(this IHttpClientBuilder source, Action<CapturingMessageHandlerOptions> configurator)
+    public static IHttpClientBuilder AddRequestAndResponseCapturing(this IHttpClientBuilder source, Action<CapturingMessageHandlerOptions>? configurator = null)
     {
-        source.Services
+        source.AssertNotNull(nameof(source)).Services
             .Configure(
-                source.AssertNotNull(nameof(source)).Name,
-                configurator.AssertNotNull(nameof(configurator))
+                source.Name,
+                configurator ?? (_ => { })
             )
             .AddTransient<CapturingMessageHandler>()
             .AddSingleton<IExecutorBuilder, ExecutorBuilder>();
@@ -40,5 +40,5 @@ public static class MessageHandlersCoreServiceCollectionExtensions
     /// <param name="configurator"></param>
     /// <returns></returns>
     public static IServiceCollection ConfigureAllRequestAndResponseCapturing(this IServiceCollection source, Action<CapturingMessageHandlerOptions> configurator) =>
-        source.ConfigureAll(configurator);
+        source.AssertNotNull(nameof(source)).ConfigureAll(configurator);
 }

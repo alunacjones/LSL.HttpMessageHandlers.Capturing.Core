@@ -19,19 +19,21 @@ public class LegacyCapturingMessageHandlerTests
     [TestCase(true, true)]
     public async Task GivenAHandler_ItShouldProduceTheExpectedResult(bool sendThrowsException, bool enabled)
     {
-        var capturesUrls = new List<string>();
+        var capturedUrls = new List<string>();
+        var capturedResponseCodes = new List<HttpStatusCode>();
         var exceptionThrown = false;
         var options = new LegacyCapturingMessageHandlerOptions()
             .AddCapturingHandlerFactory(() => new DelegatingAsyncRequestAndResponseCapturer(c =>
             {
-                capturesUrls.Add(c.Request.RequestUri.ToString());
+                capturedUrls.Add(c.Request.RequestUri.ToString());
+                c.WithRequestAndResponse((req, res) => capturedResponseCodes.Add(res.StatusCode));
                 return Task.CompletedTask;
             }))
             .AddCapturingHandlerFactory(() =>
                 new DelegatingAsyncRequestAndResponseCapturer(c =>
                 {
                     c.StopProcessing(!enabled);
-                    exceptionThrown = c.SendExceptionThrown;
+                    c.WithExceptionAndRequest((_, _) => exceptionThrown = true);
                     return Task.CompletedTask;
                 }),
                 0
@@ -56,7 +58,8 @@ public class LegacyCapturingMessageHandlerTests
         catch { }
 
         // Assert
-        capturesUrls.Should().HaveCount(enabled ? 1 : 0);
+        capturedUrls.Should().HaveCount(enabled ? 1 : 0);
+        capturedResponseCodes.Should().HaveCount(enabled & !sendThrowsException ? 1 : 0);
         exceptionThrown.Should().Be(sendThrowsException);
     }
 }

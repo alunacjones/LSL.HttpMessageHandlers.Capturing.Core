@@ -19,7 +19,7 @@ services
         .AddCapturingHandlerFactory(serviceProvider => 
             new DelegatingAsyncRequestAndResponseCapturer(c =>
             {
-                capturesUrls.Add(c.Request.RequestUri.ToString());
+                capturedUrls.Add(c.Request.RequestUri.ToString());
                 return Task.CompletedTask;
             }))
     );
@@ -38,11 +38,15 @@ var options = new LegacyCapturingMessageHandlerOptions()
     .AddCapturingHandlerFactory(() => 
         new DelegatingAsyncRequestAndResponseCapturer(c =>
         {
-            capturesUrls.Add(c.Request.RequestUri.ToString());
+            capturedUrls.Add(c.Request.RequestUri.ToString());
             return Task.CompletedTask;
         }));
 
-using var httpClient = new HttpClient(new LegacyCapturingMessageHandler(options) { InnerHandler = mockHttpMessageHandler });
+// WARNING: This is just an example and not good use
+// of a HttpClient
+using var httpClient = new HttpClient(
+    new LegacyCapturingMessageHandler(options)
+);
 
 var client = new MyTestClient(httpClient);
 // when the client is used then all request URIs will be captured in capturedUrls
