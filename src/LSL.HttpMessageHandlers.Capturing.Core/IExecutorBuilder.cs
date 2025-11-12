@@ -14,5 +14,5 @@ public interface IExecutorBuilder
     /// </summary>
     /// <param name="capturerFactories"></param>
     /// <returns></returns>
-    Func<CaptureContext, Task> Build(IEnumerable<Func<IAsyncRequestAndResponseCapturer>> capturerFactories);
+    public Func<CaptureContext, Task> Build(IEnumerable<Func<IServiceProvider, IAsyncRequestAndResponseCapturer>> capturerFactories);
 }

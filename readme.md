@@ -6,7 +6,7 @@
 
 Provides a message handler as the basis for capturing requests and responses.
 
-## Dependency Injection Quick Start
+## Quick Start
 
 The following example uses the provided `DelegatingAsyncRequestAndResponseCapturer` (it assumes an `IServiceCollection` for services):
 
@@ -24,31 +24,6 @@ services
             }))
     );
 
-// when the client is used then all request URIs will be captured in capturedUrls
-```
-
-## .NET 451 Quick Start
-
-The following example uses the provided `DelegatingAsyncRequestAndResponseCapturer`:
-
-```csharp
-var capturedUrls = new List<string>();
-
-var options = new LegacyCapturingMessageHandlerOptions()
-    .AddCapturingHandlerFactory(() => 
-        new DelegatingAsyncRequestAndResponseCapturer(c =>
-        {
-            capturedUrls.Add(c.Request.RequestUri.ToString());
-            return Task.CompletedTask;
-        }));
-
-// WARNING: This is just an example and not good use
-// of a HttpClient
-using var httpClient = new HttpClient(
-    new LegacyCapturingMessageHandler(options)
-);
-
-var client = new MyTestClient(httpClient);
 // when the client is used then all request URIs will be captured in capturedUrls
 ```
 

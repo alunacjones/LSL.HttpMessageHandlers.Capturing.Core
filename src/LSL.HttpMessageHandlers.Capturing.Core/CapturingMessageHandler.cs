@@ -1,21 +1,23 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
 
 namespace LSL.HttpMessageHandlers.Capturing.Core;
 
-/// <summary>
-/// Abstract capturing message handler
-/// </summary>
-/// <param name="executorBuilder"></param>
-public abstract class AbstractCapturingMessageHandler(IExecutorBuilder executorBuilder) : DelegatingHandler
+internal class CapturingMessageHandler(
+    IOptionsSnapshot<CapturingMessageHandlerOptions> optionsSnapshot,
+    IExecutorBuilder executorBuilder) : DelegatingHandler
 {
     private readonly ConcurrentDictionary<string, Func<CaptureContext, Task>> _container = [];
 
-    private Func<CaptureContext, Task> GetExecutor() => _container.GetOrAdd("value", _ => executorBuilder.Build(GetFactories()));
+    private Func<CaptureContext, Task> GetExecutor() => _container.GetOrAdd(
+        "value",
+        _ => executorBuilder.Build(optionsSnapshot.Get(Name).HandlerFactories));
+        
+    internal string? Name { get; set; } = string.Empty;
 
     /// <inheritdoc/>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -31,11 +33,5 @@ public abstract class AbstractCapturingMessageHandler(IExecutorBuilder executorB
             await GetExecutor()(new CaptureContext(request, null, ex));
             throw;
         }
-    }
-
-    /// <summary>
-    /// Get the factories
-    /// </summary>
-    /// <returns></returns>
-    protected abstract IEnumerable<Func<IAsyncRequestAndResponseCapturer>> GetFactories();
+    }    
 }

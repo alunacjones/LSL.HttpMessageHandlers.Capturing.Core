@@ -5,13 +5,11 @@ using System.Threading.Tasks;
 
 namespace LSL.HttpMessageHandlers.Capturing.Core;
 
-internal class ExecutorBuilder : IExecutorBuilder
+internal class ExecutorBuilder(IServiceProvider serviceProvider) : IExecutorBuilder
 {
-    internal static IExecutorBuilder Instance = new ExecutorBuilder();
-    
-    public Func<CaptureContext, Task> Build(IEnumerable<Func<IAsyncRequestAndResponseCapturer>> capturerFactories)
+    public Func<CaptureContext, Task> Build(IEnumerable<Func<IServiceProvider, IAsyncRequestAndResponseCapturer>> capturerFactories)
     {
-        var factories = capturerFactories.Select(f => f()).ToList();
+        var factories = capturerFactories.Select(f => f(serviceProvider)).ToList();
 
         return async context =>
         {
@@ -20,6 +18,6 @@ internal class ExecutorBuilder : IExecutorBuilder
                 await handler.CaptureAsync(context).ConfigureAwait(false);
                 if (context.ShouldStop) break;
             }
-        };               
+        };
     }
 }
