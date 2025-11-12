@@ -17,7 +17,7 @@ public static class CaptureContextExtensions
     /// <returns></returns>
     public static Task WithExceptionAndRequestAsync(this CaptureContext source, Func<Exception, HttpRequestMessage, Task> asyncExceptionHandler) =>
         source.SendException is null
-            ? CompletedTask()
+            ? Task.CompletedTask
             : asyncExceptionHandler(source.SendException, source.Request);
 
     /// <summary>
@@ -25,14 +25,12 @@ public static class CaptureContextExtensions
     /// </summary>
     /// <param name="source"></param>
     /// <param name="exceptionHandler"></param>
-    public static void WithExceptionAndRequest(this CaptureContext source, Action<Exception, HttpRequestMessage> exceptionHandler)
-    {
+    public static void WithExceptionAndRequest(this CaptureContext source, Action<Exception, HttpRequestMessage> exceptionHandler) =>
         source.WithExceptionAndRequestAsync((exception, request) =>
         {
             exceptionHandler(exception, request);
-            return CompletedTask();
+            return Task.CompletedTask;
         }).GetAwaiter().GetResult();
-    }
 
     /// <summary>
     /// Run an async handler when a response has been captured i.e. no send exception occurred
@@ -42,12 +40,10 @@ public static class CaptureContextExtensions
     /// <returns></returns>
     public static Task WithRequestAndResponseAsync(
         this CaptureContext source,
-        Func<HttpRequestMessage, HttpResponseMessage, Task> asyncRequestAndResponseHandler)
-    {
-        return source.Response is null
-            ? CompletedTask()
+        Func<HttpRequestMessage, HttpResponseMessage, Task> asyncRequestAndResponseHandler) =>
+        source.Response is null
+            ? Task.CompletedTask
             : asyncRequestAndResponseHandler(source.Request, source.Response);
-    }
 
     /// <summary>
     /// Runs a sync handler when a response has been captured i.e. no send exception occurred
@@ -56,19 +52,10 @@ public static class CaptureContextExtensions
     /// <param name="requestAndResponseHandler"></param>
     public static void WithRequestAndResponse(
         this CaptureContext source,
-        Action<HttpRequestMessage, HttpResponseMessage> requestAndResponseHandler)
-    {
+        Action<HttpRequestMessage, HttpResponseMessage> requestAndResponseHandler) =>
         source.WithRequestAndResponseAsync((request, response) =>
         {
             requestAndResponseHandler(request, response);
-            return CompletedTask();
+            return Task.CompletedTask;
         }).GetAwaiter().GetResult();
-    }
-
-    internal static Task CompletedTask() =>
-#if NETSTANDARD2_0
-        Task.CompletedTask;
-#else
-        Task.FromResult(0);
-#endif
 }

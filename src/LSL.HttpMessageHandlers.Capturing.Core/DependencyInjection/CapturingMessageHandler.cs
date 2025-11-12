@@ -1,22 +1,37 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
 
 internal class CapturingMessageHandler(
     IOptionsSnapshot<CapturingMessageHandlerOptions> optionsSnapshot,
-    IExecutorBuilder executorBuilder,
-    IServiceProvider serviceProvider) 
-    : AbstractCapturingMessageHandler(executorBuilder)
+    IExecutorBuilder executorBuilder) : DelegatingHandler
 {
-    internal string Name { get; set; } = string.Empty;
+    private readonly ConcurrentDictionary<string, Func<CaptureContext, Task>> _container = [];
 
-    protected override IEnumerable<Func<IAsyncRequestAndResponseCapturer>> GetFactories()
+    private Func<CaptureContext, Task> GetExecutor() => _container.GetOrAdd(
+        "value",
+        _ => executorBuilder.Build(optionsSnapshot.Get(Name).Factories));
+        
+    internal string? Name { get; set; } = string.Empty;
+
+    /// <inheritdoc/>
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        foreach (var factory in optionsSnapshot.Get(Name).Factories)
+        try
         {
-            yield return () => factory(serviceProvider);
+            var response = await base.SendAsync(request, cancellationToken);
+            await GetExecutor()(new CaptureContext(request, response, null));
+            return response;
         }
-    }
+        catch (Exception ex)
+        {
+            await GetExecutor()(new CaptureContext(request, null, ex));
+            throw;
+        }
+    }    
 }

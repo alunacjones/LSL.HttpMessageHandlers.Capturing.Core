@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using LSL.HttpMessageHandlers.Capturing.Core.Infrastructure;
 
 namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
 
@@ -6,13 +8,28 @@ namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
 /// Capturing message handler options
 /// </summary>
 public sealed class CapturingMessageHandlerOptions
-    : AbstractCapturingMessageHandlerOptions<Func<IServiceProvider, IAsyncRequestAndResponseCapturer>, CapturingMessageHandlerOptions>
 {
+    private readonly List<Func<IServiceProvider, IAsyncRequestAndResponseCapturer>> _factories = [];
+    internal List<Func<IServiceProvider, IAsyncRequestAndResponseCapturer>> Factories => _factories;
+
     /// <summary>
-    /// Default constructor
+    /// Adds a capturing handler factory
     /// </summary>
-    public CapturingMessageHandlerOptions()
+    /// <param name="factory"></param>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    public CapturingMessageHandlerOptions AddCapturingHandlerFactory(Func<IServiceProvider, IAsyncRequestAndResponseCapturer> factory, int? index = null)
     {
-        Self = this;
+        return index switch
+        {
+            int intIndex => ReturnThis(() => _factories.Insert(intIndex, factory.AssertNotNull(nameof(factory)))),
+            null => ReturnThis(() => _factories.Add(factory.AssertNotNull(nameof(factory))))
+        };
+    }
+    
+    private CapturingMessageHandlerOptions ReturnThis(Action action)
+    {
+        action();
+        return this;
     }
 }

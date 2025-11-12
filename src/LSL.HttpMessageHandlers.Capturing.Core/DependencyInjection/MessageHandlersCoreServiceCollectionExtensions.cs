@@ -18,18 +18,20 @@ public static class MessageHandlersCoreServiceCollectionExtensions
     /// <param name="source"></param>
     /// <param name="configurator"></param>
     /// <returns></returns>
-    public static IHttpClientBuilder AddRequestAndResponseCapturing(this IHttpClientBuilder source, Action<CapturingMessageHandlerOptions>? configurator = null)
+    public static IHttpClientBuilder AddRequestAndResponseCapturing(this IHttpClientBuilder source, Action<ICapturingHandlerBuilder>? configurator = null)
     {
+        var builder = new CapturingHandlerBuilder(source.Name, source.Services);
+
         source.AssertNotNull(nameof(source)).Services
-            .Configure(
-                source.Name,
-                configurator ?? (_ => { })
-            )
-            .AddTransient<CapturingMessageHandler>()
-            .AddSingleton<IExecutorBuilder, ExecutorBuilder>();
+            .FluentlyTryAddTransient<CapturingMessageHandler>()
+            .FluentlyTryAddSingleton<IExecutorBuilder, ExecutorBuilder>();
+
+        configurator?.Invoke(builder);
 
         return source.AddHttpMessageHandler(
-            sp => sp.GetRequiredService<CapturingMessageHandler>().With(a => a.Name = source.Name)
+            sp => sp.GetRequiredService<CapturingMessageHandler>().With(
+                a => a.Name = builder.Name
+            )
         );
     }
 
@@ -39,6 +41,10 @@ public static class MessageHandlersCoreServiceCollectionExtensions
     /// <param name="source"></param>
     /// <param name="configurator"></param>
     /// <returns></returns>
-    public static IServiceCollection ConfigureAllRequestAndResponseCapturing(this IServiceCollection source, Action<CapturingMessageHandlerOptions> configurator) =>
-        source.AssertNotNull(nameof(source)).ConfigureAll(configurator);
+    public static IServiceCollection ConfigureAllRequestAndResponseCapturing(this IServiceCollection source, Action<ICapturingHandlerBuilder> configurator)
+    {
+        var builder = new CapturingHandlerBuilder(null, source.AssertNotNull(nameof(source)));
+        configurator.AssertNotNull(nameof(configurator)).Invoke(builder);
+        return source;
+    }
 }
