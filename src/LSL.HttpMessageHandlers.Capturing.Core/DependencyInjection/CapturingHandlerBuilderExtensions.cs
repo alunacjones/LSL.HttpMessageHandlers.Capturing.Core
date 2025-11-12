@@ -24,7 +24,7 @@ public static class CapturingHandlerBuilderExtensions
         Action<IsEnabledProviderOptions>? configurator = null,
         int? index = null)
     {
-        var name = $"{source.Name}-{Guid.NewGuid()}";
+        var name = source.BuildUniqueName();
 
         source.Services
             .Configure<IsEnabledProviderOptions>(name, (c) =>
