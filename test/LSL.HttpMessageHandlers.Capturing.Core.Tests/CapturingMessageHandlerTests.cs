@@ -127,20 +127,13 @@ public class CapturingMessageHandlerTests
         var provider = new ServiceCollection()
             .AddCapturingHandlersToAllHttpClients()
             .ConfigureAllRequestAndResponseCapturing(c => c
-                .AddCapturingHandlerDelegate(context =>
-                {
-                    context.WithRequestAndResponse((req, res) => ranOtherHandler = true);
-                    return Task.CompletedTask;
-                })
+                .AddCapturingHandlerDelegate(context => context.WithRequestAndResponse((req, res) => ranOtherHandler = true))
             )
             .AddMockHttpMessageHandler()
             .AddHttpClient<MyTestClient>()
             .AddRequestAndResponseCapturing(c => c
-                .AddCapturingHandlerDelegate(context =>
-                {
-                    ranSecondary = true;
-                    return Task.CompletedTask;
-                }))
+                .AddCapturingHandlerDelegate(context => ranSecondary = true)
+            )
             .Services
             .BuildServiceProvider();
 
@@ -156,8 +149,8 @@ public class CapturingMessageHandlerTests
         using var assertionScope = new AssertionScope();
         ranOtherHandler.Should().BeTrue();
         ranSecondary.Should().BeTrue();
-        
     }
+    
     [Test]
     public void GivenOptionsThatReceiveANullFactory_ItShouldThrowAnArgumentNullException()
     {
