@@ -1,7 +1,9 @@
 using System;
-using LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
 using LSL.HttpMessageHandlers.Capturing.Core.Infrastructure;
 using LSL.HttpMessageHandlers.Capturing.Core;
+using Microsoft.Extensions.Http;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Net.Http;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace Microsoft.Extensions.DependencyInjection;
@@ -20,11 +22,10 @@ public static class MessageHandlersCoreServiceCollectionExtensions
     /// <returns></returns>
     public static IHttpClientBuilder AddRequestAndResponseCapturing(this IHttpClientBuilder source, Action<ICapturingHandlerBuilder>? configurator = null)
     {
-        var builder = new CapturingHandlerBuilder(source.Name, source.Services);
+        var builder = new CapturingHandlerBuilder(OptionsHelper.BuildUniqueName(source.Name), source.Services);
 
         source.AssertNotNull(nameof(source)).Services
-            .FluentlyTryAddTransient<CapturingMessageHandler>()
-            .FluentlyTryAddSingleton<IExecutorBuilder, ExecutorBuilder>();
+            .AddCapturingHandlerServices();
 
         configurator?.Invoke(builder);
 
@@ -47,4 +48,26 @@ public static class MessageHandlersCoreServiceCollectionExtensions
         configurator.AssertNotNull(nameof(configurator)).Invoke(builder);
         return source;
     }
-}
+
+    /// <summary>
+    /// Adds a capturing message handler to all <see cref="HttpClient"/>s
+    /// </summary>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    public static IServiceCollection AddCapturingHandlersToAllHttpClients(this IServiceCollection source)
+    {
+        return source
+            .AddCapturingHandlerServices()
+            .ConfigureAll<HttpClientFactoryOptions>(o =>
+            {
+                o.HttpMessageHandlerBuilderActions.Add(
+                    m => m.Services.GetRequiredService<CapturingMessageHandler>().With(h => h.Name = m.Name)
+                );
+            });
+    }
+
+    internal static IServiceCollection AddCapturingHandlerServices(this IServiceCollection source) =>
+        source
+            .FluentlyTryAddSingleton<IExecutorBuilder, ExecutorBuilder>()
+            .FluentlyTryAddTransient<CapturingMessageHandler>();        
+}       

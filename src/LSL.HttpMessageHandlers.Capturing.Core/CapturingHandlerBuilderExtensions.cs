@@ -1,10 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using LSL.HttpMessageHandlers.Capturing.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
-namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
+namespace LSL.HttpMessageHandlers.Capturing.Core;
 
 /// <summary>
 /// Capturing handler builder extensions
@@ -93,4 +93,14 @@ public static class CapturingHandlerBuilderExtensions
         new DelegatingAsyncRequestAndResponseCapturer(@delegate),
         index
     ));
+
+
+    /// <summary>
+    /// Builds a unique name based on the 
+    /// <see cref="ICapturingHandlerBuilder">ICapturingHandlerBuilder</see>'s 
+    /// <see cref="ICapturingHandlerBuilder.Name">Name</see>
+    /// </summary>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    public static string BuildUniqueName(this ICapturingHandlerBuilder source) => OptionsHelper.BuildUniqueName(source.Name);    
 }

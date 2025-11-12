@@ -1,7 +1,8 @@
 using System;
+using LSL.HttpMessageHandlers.Capturing.Core;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
+namespace LSL.HttpMessageHandlers.Capturing.Core;
 
 internal static class InternalCapturingHandlerExtensions
 {
@@ -11,8 +12,4 @@ internal static class InternalCapturingHandlerExtensions
         source.Services.Configure(name, configurator);
         return source;
     }
-
-    public static string BuildUniqueName(this ICapturingHandlerBuilder source) => BuildUniqueName(source.Name);
-
-    public static string BuildUniqueName(string? originalName) => originalName is null ? null! : $"originalName-{Guid.NewGuid()}";
 }

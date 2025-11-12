@@ -1,17 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Configuration.Assemblies;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using LSL.ExecuteIf;
-using LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
 using LSL.HttpMessageHandlers.Capturing.Core.Tests.TestHelpers;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Http;
 using RichardSzalay.MockHttp;
 
 namespace LSL.HttpMessageHandlers.Capturing.Core.Tests;
@@ -82,7 +78,7 @@ public class CapturingMessageHandlerTests
         // Arrange
         var ranOtherHandler = false;
         var ranSecondary = false;
-        var provider = new ServiceCollection()            
+        var provider = new ServiceCollection()
             .AddMockHttpMessageHandler()
             .AddHttpClient<MyTestClient>()
             .AddRequestAndResponseCapturing(c => c
@@ -95,12 +91,13 @@ public class CapturingMessageHandlerTests
                 .AddCapturingHandlerDelegate(context =>
                 {
                     return Task.CompletedTask;
-                })            
+                })
             )
             .AddRequestAndResponseCapturing(c => c
                 .AddIsEnabledProvider()
                 .AddIsEnabledProvider(c => c.IsEnabled = false)
-                .AddCapturingHandlerDelegate(context => {
+                .AddCapturingHandlerDelegate(context =>
+                {
                     ranSecondary = true;
                     return Task.CompletedTask;
                 }))
@@ -121,6 +118,46 @@ public class CapturingMessageHandlerTests
         ranSecondary.Should().BeFalse();
     }
 
+    [Test]
+    public async Task GivenConfigureAllForHttpClients_ItShouldConfigureCapturingHandlersCorrectly()
+    {
+        // Arrange
+        var ranOtherHandler = false;
+        var ranSecondary = false;
+        var provider = new ServiceCollection()
+            .AddCapturingHandlersToAllHttpClients()
+            .ConfigureAllRequestAndResponseCapturing(c => c
+                .AddCapturingHandlerDelegate(context =>
+                {
+                    context.WithRequestAndResponse((req, res) => ranOtherHandler = true);
+                    return Task.CompletedTask;
+                })
+            )
+            .AddMockHttpMessageHandler()
+            .AddHttpClient<MyTestClient>()
+            .AddRequestAndResponseCapturing(c => c
+                .AddCapturingHandlerDelegate(context =>
+                {
+                    ranSecondary = true;
+                    return Task.CompletedTask;
+                }))
+            .Services
+            .BuildServiceProvider();
+
+        var client = provider.GetRequiredService<MyTestClient>();
+        var mockHttpMessageHandler = provider.GetRequiredService<MockHttpMessageHandler>();
+
+        mockHttpMessageHandler.When("http://nowhere.com").Respond(HttpStatusCode.OK);
+
+        // Act
+        await client.SendRequest();
+
+        // Assert
+        using var assertionScope = new AssertionScope();
+        ranOtherHandler.Should().BeTrue();
+        ranSecondary.Should().BeTrue();
+        
+    }
     [Test]
     public void GivenOptionsThatReceiveANullFactory_ItShouldThrowAnArgumentNullException()
     {

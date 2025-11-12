@@ -1,7 +1,6 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
+namespace LSL.HttpMessageHandlers.Capturing.Core;
 
 /// <summary>
 /// Capturing handler builder

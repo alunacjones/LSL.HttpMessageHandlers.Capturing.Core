@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
-namespace LSL.HttpMessageHandlers.Capturing.Core.DependencyInjection;
+namespace LSL.HttpMessageHandlers.Capturing.Core;
 
 internal class CapturingMessageHandler(
     IOptionsSnapshot<CapturingMessageHandlerOptions> optionsSnapshot,
@@ -15,7 +15,7 @@ internal class CapturingMessageHandler(
 
     private Func<CaptureContext, Task> GetExecutor() => _container.GetOrAdd(
         "value",
-        _ => executorBuilder.Build(optionsSnapshot.Get(Name).Factories));
+        _ => executorBuilder.Build(optionsSnapshot.Get(Name).HandlerFactories));
         
     internal string? Name { get; set; } = string.Empty;
 
