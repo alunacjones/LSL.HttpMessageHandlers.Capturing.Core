@@ -9,7 +9,8 @@ namespace LSL.HttpMessageHandlers.Capturing.Core;
 /// <param name="Request"></param>
 /// <param name="Response"></param>
 /// <param name="SendException"></param>
-public sealed record CaptureContext(HttpRequestMessage Request, HttpResponseMessage? Response, Exception? SendException)
+/// <param name="TimeToRun"></param>
+public sealed record CaptureContext(HttpRequestMessage Request, HttpResponseMessage? Response, Exception? SendException, TimeSpan TimeToRun)
 {
     internal bool ShouldStop { get; private set; } = false;
 

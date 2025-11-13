@@ -22,15 +22,17 @@ internal class CapturingMessageHandler(
     /// <inheritdoc/>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        var startTime = DateTime.UtcNow;
+
         try
         {
             var response = await base.SendAsync(request, cancellationToken);
-            await GetExecutor()(new CaptureContext(request, response, null));
+            await GetExecutor()(new CaptureContext(request, response, null, DateTime.UtcNow.Subtract(startTime)));
             return response;
         }
         catch (Exception ex)
         {
-            await GetExecutor()(new CaptureContext(request, null, ex));
+            await GetExecutor()(new CaptureContext(request, null, ex, DateTime.UtcNow.Subtract(startTime)));
             throw;
         }
     }    
