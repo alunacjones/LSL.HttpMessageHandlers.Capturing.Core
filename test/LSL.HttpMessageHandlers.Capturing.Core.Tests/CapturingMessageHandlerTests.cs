@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using LSL.ExecuteIf;
 using LSL.HttpMessageHandlers.Capturing.Core.Tests.TestHelpers;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http;
 using RichardSzalay.MockHttp;
 
 namespace LSL.HttpMessageHandlers.Capturing.Core.Tests;
@@ -80,7 +80,7 @@ public class CapturingMessageHandlerTests
         var ranSecondary = false;
         var provider = new ServiceCollection()
             .AddMockHttpMessageHandler()
-            .AddHttpClient<MyTestClient>()
+            .AddHttpClient<MyTestClient>()            
             .AddRequestAndResponseCapturing(c => c
                 .AddIsEnabledProvider<TestEnabledProvider>()
                 .AddCapturingHandlerDelegate(context =>
@@ -125,11 +125,12 @@ public class CapturingMessageHandlerTests
         var ranOtherHandler = false;
         var ranSecondary = false;
         var provider = new ServiceCollection()
-            .AddCapturingHandlersToAllHttpClients()
-            .ConfigureAllRequestAndResponseCapturing(c => c
+            .AddCapturingHandlersToAllHttpClients(c => c
                 .AddCapturingHandlerDelegate(context => context.WithRequestAndResponse((req, res) => ranOtherHandler = true))
             )
             .AddMockHttpMessageHandler()
+            .AddHttpClient<MyOtherTestClient>()
+            .Services
             .AddHttpClient<MyTestClient>()
             .AddRequestAndResponseCapturing(c => c
                 .AddCapturingHandlerDelegate(context => ranSecondary = true)
@@ -138,6 +139,8 @@ public class CapturingMessageHandlerTests
             .BuildServiceProvider();
 
         var client = provider.GetRequiredService<MyTestClient>();
+        var httpClient = provider.GetRequiredService<HttpClient>();
+        var otherClient = provider.GetRequiredService<MyOtherTestClient>();        
         var mockHttpMessageHandler = provider.GetRequiredService<MockHttpMessageHandler>();
 
         mockHttpMessageHandler.When("http://nowhere.com").Respond(HttpStatusCode.OK);
@@ -146,9 +149,24 @@ public class CapturingMessageHandlerTests
         await client.SendRequest();
 
         // Assert
-        using var assertionScope = new AssertionScope();
-        ranOtherHandler.Should().BeTrue();
+        //using var assertionScope = new AssertionScope();
+        ranOtherHandler.Should().BeFalse();
         ranSecondary.Should().BeTrue();
+
+        ranSecondary = false;
+        ranOtherHandler = false;
+
+        await otherClient.SendRequest();
+
+        ranOtherHandler.Should().BeTrue();
+        ranSecondary.Should().BeFalse();
+
+        ranSecondary = false;
+        ranOtherHandler = false;
+
+        await httpClient.GetAsync("http://nowhere.com");
+
+        ;
     }
     
     [Test]

@@ -26,7 +26,7 @@ internal class CapturingMessageHandler(
 
         try
         {
-            var response = await base.SendAsync(request, cancellationToken);
+            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             await GetExecutor()(new CaptureContext(request, response, null, DateTime.UtcNow.Subtract(startTime)));
             return response;
         }

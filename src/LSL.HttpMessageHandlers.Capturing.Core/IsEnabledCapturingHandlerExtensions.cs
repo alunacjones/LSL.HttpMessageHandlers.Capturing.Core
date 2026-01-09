@@ -37,7 +37,7 @@ public static class IsEnabledCapturingHandlerExtensions
 
         return source.AddCapturingHandlerFactory(
             sp => new IsEnabledCapturingHandler(
-                new IsEnabledOptionsContainer(name, sp.GetRequiredService<IOptionsMonitor<IsEnabledProviderOptions>>())
+                ActivatorUtilities.CreateInstance<IsEnabledOptionsContainer>(sp, name)
             ),
             index
         );
