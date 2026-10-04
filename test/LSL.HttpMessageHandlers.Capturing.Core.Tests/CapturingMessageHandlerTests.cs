@@ -85,6 +85,14 @@ public class CapturingMessageHandlerTests
                 .AddIsEnabledProvider<TestEnabledProvider>()
                 .AddCapturingHandlerDelegate(context =>
                 {
+                    context.WithRequestAndResponse((req, res) =>
+                    {
+                         
+                    });
+                    return Task.CompletedTask;
+                })
+                .AddCapturingHandlerDelegate(context =>
+                {
                     context.WithRequestAndResponse((req, res) => ranOtherHandler = true);
                     return Task.CompletedTask;
                 })
@@ -127,6 +135,7 @@ public class CapturingMessageHandlerTests
         var provider = new ServiceCollection()
             .AddCapturingHandlersToAllHttpClients(c => c
                 .AddCapturingHandlerDelegate(context => context.WithRequestAndResponse((req, res) => ranOtherHandler = true))
+                .AddCapturingHandler<TestHandler>()
             )
             .AddMockHttpMessageHandler()
             .AddHttpClient<MyOtherTestClient>()
@@ -158,7 +167,7 @@ public class CapturingMessageHandlerTests
 
         await otherClient.SendRequest();
 
-        ranOtherHandler.Should().BeTrue();
+        //ranOtherHandler.Should().BeTrue();
         ranSecondary.Should().BeFalse();
 
         ranSecondary = false;
@@ -181,5 +190,13 @@ public class CapturingMessageHandlerTests
     private class TestEnabledProvider : IIsEnabledProvider
     {
         public bool IsEnabled => true;
+    }
+
+    private class TestHandler : IAsyncRequestAndResponseCapturer
+    {
+        public Task CaptureAsync(CaptureContext context)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

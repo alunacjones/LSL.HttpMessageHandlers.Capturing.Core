@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace LSL.HttpMessageHandlers.Capturing.Core;
 
@@ -21,6 +22,24 @@ public static class CapturingHandlerBuilderExtensions
         int? index = null
     ) =>
     source.Configure<CapturingMessageHandlerOptions>(source.Name, c => c.AddCapturingHandlerFactory(factory, index));
+
+    /// <summary>
+    /// Adds a capturing handler
+    /// </summary>
+    /// <typeparam name="THandler"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="index"></param>
+    /// <returns></returns>
+    public static ICapturingHandlerBuilder AddCapturingHandler<THandler>(
+        this ICapturingHandlerBuilder source,
+        int? index = null        
+    )
+    where THandler : IAsyncRequestAndResponseCapturer 
+    =>
+    source.Configure<CapturingMessageHandlerOptions>(source.Name, c => c.AddCapturingHandlerFactory(
+        sp => ActivatorUtilities.CreateInstance<THandler>(sp),
+        index
+    ));
 
     /// <summary>
     /// Adds a capturing delegate
