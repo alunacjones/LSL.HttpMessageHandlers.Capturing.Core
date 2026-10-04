@@ -26,13 +26,13 @@ internal class CapturingMessageHandler(
 
         try
         {
-            var response = await base.SendAsync(request, cancellationToken);
-            await GetExecutor()(new CaptureContext(request, response, null, DateTime.UtcNow.Subtract(startTime)));
+            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            await GetExecutor()(new CaptureContext(request, response, null, DateTime.UtcNow.Subtract(startTime))).ConfigureAwait(false);
             return response;
         }
         catch (Exception ex)
         {
-            await GetExecutor()(new CaptureContext(request, null, ex, DateTime.UtcNow.Subtract(startTime)));
+            await GetExecutor()(new CaptureContext(request, null, ex, DateTime.UtcNow.Subtract(startTime))).ConfigureAwait(false);
             throw;
         }
     }    

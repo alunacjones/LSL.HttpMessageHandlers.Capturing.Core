@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using FluentAssertions;
 using LSL.ExecuteIf;
 
@@ -12,7 +11,6 @@ public class OptionsHelperTests
     [TestCase("name", true, "name-{guid}")]
     public void GivenBuildUniqueName_GivenInputs_ItShouldReturnTheExpectedResult(string originalName, bool preserveNull, string expectedOutput)
     {
-        // 00000000-0000-0000-0000-000000000000
         OptionsHelper.BuildUniqueName(originalName, preserveNull).ExecuteIf(
             expectedOutput is null,
             o => o.Should().BeNull(),
