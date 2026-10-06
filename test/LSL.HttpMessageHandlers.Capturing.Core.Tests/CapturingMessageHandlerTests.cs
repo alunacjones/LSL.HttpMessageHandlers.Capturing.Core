@@ -130,12 +130,13 @@ public class CapturingMessageHandlerTests
     public async Task GivenConfigureAllForHttpClients_ItShouldConfigureCapturingHandlersCorrectly()
     {
         // Arrange
-        var ranOtherHandler = false;
+        var ranGlobalHandler = false;
         var ranSecondary = false;
         var provider = new ServiceCollection()
-            .AddCapturingHandlersToAllHttpClients(c => c
-                .AddCapturingHandlerDelegate(context => context.WithRequestAndResponse((req, res) => ranOtherHandler = true))
-                .AddCapturingHandler<TestHandler>()
+            .AddCapturingHandlersToAllHttpClients()
+            .ConfigureAllRequestAndResponseCapturing(c => c
+                .AddCapturingHandlerDelegate(context => context.WithRequestAndResponse((req, res) => ranGlobalHandler = true))
+                .AddCapturingHandler<TestHandler>()            
             )
             .AddMockHttpMessageHandler()
             .AddHttpClient<MyOtherTestClient>()
@@ -159,11 +160,11 @@ public class CapturingMessageHandlerTests
 
         // Assert
         //using var assertionScope = new AssertionScope();
-        ranOtherHandler.Should().BeFalse();
+        ranGlobalHandler.Should().BeTrue();
         ranSecondary.Should().BeTrue();
 
         ranSecondary = false;
-        ranOtherHandler = false;
+        ranGlobalHandler = false;
 
         await otherClient.SendRequest();
 
@@ -171,7 +172,7 @@ public class CapturingMessageHandlerTests
         ranSecondary.Should().BeFalse();
 
         ranSecondary = false;
-        ranOtherHandler = false;
+        ranGlobalHandler = false;
 
         await httpClient.GetAsync("http://nowhere.com");
 

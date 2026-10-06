@@ -2,8 +2,8 @@ using System;
 using LSL.HttpMessageHandlers.Capturing.Core.Infrastructure;
 using LSL.HttpMessageHandlers.Capturing.Core;
 using Microsoft.Extensions.Http;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net.Http;
+using Microsoft.Extensions.Options;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace Microsoft.Extensions.DependencyInjection;
@@ -53,25 +53,24 @@ public static class MessageHandlersCoreServiceCollectionExtensions
     /// Adds a capturing message handler to all <see cref="HttpClient"/>s
     /// </summary>
     /// <param name="source"></param>
-    /// <param name="configurator"></param>
     /// <returns></returns>
-    public static IServiceCollection AddCapturingHandlersToAllHttpClients(this IServiceCollection source, Action<ICapturingHandlerBuilder> configurator)
+    public static IServiceCollection AddCapturingHandlersToAllHttpClients(this IServiceCollection source)
     {
-        var builder = new CapturingHandlerBuilder(Options.Options.DefaultName, source);
-        configurator.AssertNotNull(nameof(configurator)).Invoke(builder);
-
         return source
             .AddCapturingHandlerServices()
+            .AddOptions<CapturingMessageHandlerOptions>(CapturingMessageHandlerOptions.GlobalSettingsName)
+            .Services
             .ConfigureAll<HttpClientFactoryOptions>(o =>
             {
                 o.HttpMessageHandlerBuilderActions.Add(
-                    m => m.Services.GetRequiredService<CapturingMessageHandler>().With(h => h.Name = builder.Name)
+                    m => m.Services.GetRequiredService<CapturingMessageHandler>().With(h => h.Name = CapturingMessageHandlerOptions.GlobalSettingsName)
                 );
             });
     }
 
     internal static IServiceCollection AddCapturingHandlerServices(this IServiceCollection source) =>
         source
+            // .FluentlyTryAddSingleton<IPostConfigureOptions<CapturingMessageHandlerOptions>, GlobalMergingPostConfigureCapturingMessageHandlerOptions>()
             .FluentlyTryAddSingleton<IExecutorBuilder, ExecutorBuilder>()
             .FluentlyTryAddTransient<CapturingMessageHandler>();        
 }       
