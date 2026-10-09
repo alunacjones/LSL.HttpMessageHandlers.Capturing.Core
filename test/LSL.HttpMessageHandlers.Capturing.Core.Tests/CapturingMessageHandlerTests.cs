@@ -25,7 +25,7 @@ public class CapturingMessageHandlerTests
         var capturedResponseStatuses = new List<HttpStatusCode>();
         var exceptionThrown = false;
         var provider = new ServiceCollection()
-            .ConfigureAllRequestAndResponseCapturing(c => c
+            .AddCapturingHandlersToAllHttpClients(c => c
                 .AddIsEnabledProvider(c => c.IsEnabled = enabled, 0)
                 .AddCapturingHandlerFactory(_ => new DelegatingAsyncRequestAndResponseCapturer(c =>
                 {
@@ -43,7 +43,7 @@ public class CapturingMessageHandlerTests
                         c.WithExceptionAndRequest((_, _) => exceptionThrown = true);
                         return Task.CompletedTask;
                     }))
-            )            
+            )
             .AddMockHttpMessageHandler()
             .AddHttpClient<MyTestClient>()
             .AddRequestAndResponseCapturing()
@@ -76,24 +76,16 @@ public class CapturingMessageHandlerTests
     public async Task GivenACustomIsEnabledProviderThatReturnsTrue_ItShouldRunAllHandlers()
     {
         // Arrange
-        var ranOtherHandler = false;
-        var ranSecondary = false;
+        var ranOtherHandler = 0;
+        var ranSecondary = 0;
         var provider = new ServiceCollection()
             .AddMockHttpMessageHandler()
-            .AddHttpClient<MyTestClient>()            
+            .AddHttpClient<MyTestClient>()
             .AddRequestAndResponseCapturing(c => c
                 .AddIsEnabledProvider<TestEnabledProvider>()
                 .AddCapturingHandlerDelegate(context =>
                 {
-                    context.WithRequestAndResponse((req, res) =>
-                    {
-                         
-                    });
-                    return Task.CompletedTask;
-                })
-                .AddCapturingHandlerDelegate(context =>
-                {
-                    context.WithRequestAndResponse((req, res) => ranOtherHandler = true);
+                    context.WithRequestAndResponse((req, res) => ranOtherHandler++);
                     return Task.CompletedTask;
                 })
                 .AddCapturingHandlerDelegate(context =>
@@ -106,7 +98,7 @@ public class CapturingMessageHandlerTests
                 .AddIsEnabledProvider(c => c.IsEnabled = false)
                 .AddCapturingHandlerDelegate(context =>
                 {
-                    ranSecondary = true;
+                    ranSecondary++;
                     return Task.CompletedTask;
                 }))
             .Services
@@ -122,35 +114,39 @@ public class CapturingMessageHandlerTests
 
         // Assert
         using var assertionScope = new AssertionScope();
-        ranOtherHandler.Should().BeTrue();
-        ranSecondary.Should().BeFalse();
+        ranOtherHandler.Should().Be(1);
+        ranSecondary.Should().Be(0);
     }
 
-    [Test]
-    public async Task GivenConfigureAllForHttpClients_ItShouldConfigureCapturingHandlersCorrectly()
+    [TestCase(false, new bool[] { false, true })]
+    [TestCase(true, new bool[] { false, true })]
+    public async Task GivenConfigureAllForHttpClients_ItShouldConfigureCapturingHandlersCorrectly(bool registerGlobalFirst, bool[] expectedRunOrder)
     {
         // Arrange
-        var ranGlobalHandler = false;
-        var ranSecondary = false;
+        var ranGlobalHandler = 0;
+        var ranSecondary = 0;
+        var runOrder = new List<bool>();
+
         var provider = new ServiceCollection()
-            .AddCapturingHandlersToAllHttpClients()
-            .ConfigureAllRequestAndResponseCapturing(c => c
-                .AddCapturingHandlerDelegate(context => context.WithRequestAndResponse((req, res) => ranGlobalHandler = true))
-                .AddCapturingHandler<TestHandler>()            
-            )
+            .ExecuteIf(registerGlobalFirst, o => o.AddCapturingHandlersToAllHttpClients(ConfigureGlobals))
             .AddMockHttpMessageHandler()
             .AddHttpClient<MyOtherTestClient>()
             .Services
             .AddHttpClient<MyTestClient>()
             .AddRequestAndResponseCapturing(c => c
-                .AddCapturingHandlerDelegate(context => ranSecondary = true)
+                .AddCapturingHandlerDelegate(context => { ranSecondary++; runOrder.Add(false); })
             )
             .Services
+            .ExecuteIf(registerGlobalFirst is false, o => o.AddCapturingHandlersToAllHttpClients(ConfigureGlobals))
             .BuildServiceProvider();
+
+        void ConfigureGlobals(ICapturingHandlerBuilder builder) => builder
+            .AddCapturingHandlerDelegate(context => context.WithRequestAndResponse((req, res) => { ranGlobalHandler++; runOrder.Add(true); }))
+            .AddCapturingHandler<TestHandler>();
 
         var client = provider.GetRequiredService<MyTestClient>();
         var httpClient = provider.GetRequiredService<HttpClient>();
-        var otherClient = provider.GetRequiredService<MyOtherTestClient>();        
+        var otherClient = provider.GetRequiredService<MyOtherTestClient>();
         var mockHttpMessageHandler = provider.GetRequiredService<MockHttpMessageHandler>();
 
         mockHttpMessageHandler.When("http://nowhere.com").Respond(HttpStatusCode.OK);
@@ -160,25 +156,35 @@ public class CapturingMessageHandlerTests
 
         // Assert
         //using var assertionScope = new AssertionScope();
-        ranGlobalHandler.Should().BeTrue();
-        ranSecondary.Should().BeTrue();
 
-        ranSecondary = false;
-        ranGlobalHandler = false;
+        ranGlobalHandler.Should().Be(1);
+        ranSecondary.Should().Be(1);
+        runOrder.Should().BeEquivalentTo(expectedRunOrder, o => o.WithStrictOrdering());
+
+        ClearRecordedData();
 
         await otherClient.SendRequest();
 
         //ranOtherHandler.Should().BeTrue();
-        ranSecondary.Should().BeFalse();
+        ranSecondary.Should().Be(0);
 
-        ranSecondary = false;
-        ranGlobalHandler = false;
+        ClearRecordedData();
 
         await httpClient.GetAsync("http://nowhere.com");
 
-        ;
+        ranGlobalHandler.Should().Be(1);
+        ranSecondary.Should().Be(0);
+
+        runOrder.Should().BeEquivalentTo([true], o => o.WithStrictOrdering());
+
+        void ClearRecordedData()
+        {
+            ranSecondary = 0;
+            ranGlobalHandler = 0;
+            runOrder.Clear();
+        }
     }
-    
+
     [Test]
     public void GivenOptionsThatReceiveANullFactory_ItShouldThrowAnArgumentNullException()
     {

@@ -37,40 +37,31 @@ public static class MessageHandlersCoreServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Configure all named options for request and response capturing
+    /// Adds a capturing message handler to all <see cref="HttpClient"/>s
     /// </summary>
     /// <param name="source"></param>
     /// <param name="configurator"></param>
     /// <returns></returns>
-    public static IServiceCollection ConfigureAllRequestAndResponseCapturing(this IServiceCollection source, Action<ICapturingHandlerBuilder> configurator)
+    public static IServiceCollection AddCapturingHandlersToAllHttpClients(this IServiceCollection source, Action<ICapturingHandlerBuilder> configurator)
     {
-        var builder = new CapturingHandlerBuilder(null, source.AssertNotNull(nameof(source)));
-        configurator.AssertNotNull(nameof(configurator)).Invoke(builder);
-        return source;
-    }
+        var builder = new CapturingHandlerBuilder(CapturingMessageHandlerOptions.GlobalSettingsName, source);
+        configurator.AssertNotNull(nameof(configurator))(builder);
 
-    /// <summary>
-    /// Adds a capturing message handler to all <see cref="HttpClient"/>s
-    /// </summary>
-    /// <param name="source"></param>
-    /// <returns></returns>
-    public static IServiceCollection AddCapturingHandlersToAllHttpClients(this IServiceCollection source)
-    {
         return source
             .AddCapturingHandlerServices()
-            .AddOptions<CapturingMessageHandlerOptions>(CapturingMessageHandlerOptions.GlobalSettingsName)
+            .AddOptions<CapturingMessageHandlerOptions>(builder.Name)
             .Services
             .ConfigureAll<HttpClientFactoryOptions>(o =>
             {
-                o.HttpMessageHandlerBuilderActions.Add(
-                    m => m.Services.GetRequiredService<CapturingMessageHandler>().With(h => h.Name = CapturingMessageHandlerOptions.GlobalSettingsName)
-                );
+                o.HttpMessageHandlerBuilderActions.Insert(
+                    0,
+                    m => m.AdditionalHandlers.Insert(0, m.Services.GetRequiredService<CapturingMessageHandler>().With(h => h.Name = builder.Name)
+                ));
             });
     }
 
     internal static IServiceCollection AddCapturingHandlerServices(this IServiceCollection source) =>
         source
-            // .FluentlyTryAddSingleton<IPostConfigureOptions<CapturingMessageHandlerOptions>, GlobalMergingPostConfigureCapturingMessageHandlerOptions>()
             .FluentlyTryAddSingleton<IExecutorBuilder, ExecutorBuilder>()
             .FluentlyTryAddTransient<CapturingMessageHandler>();        
 }       

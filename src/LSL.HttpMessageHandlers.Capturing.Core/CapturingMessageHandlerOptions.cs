@@ -10,7 +10,7 @@ namespace LSL.HttpMessageHandlers.Capturing.Core;
 /// </summary>
 public sealed class CapturingMessageHandlerOptions
 {
-    internal static string GlobalSettingsName { get; } = $"GlobalCapturingMessageHandlerOptions.{Guid.NewGuid()}";
+    internal static string GlobalSettingsName { get; } = $"GlobalCapturingMessageHandlerOptions.6897abd8-c62f-4e54-872a-69763abff432";
 
     internal List<Func<IServiceProvider, IAsyncRequestAndResponseCapturer>> HandlerFactories { get; } = [];
 
